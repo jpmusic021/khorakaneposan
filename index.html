@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="gu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ગુજરાતી હેલ્થ ક્વિઝ</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;700&display=swap');
+
+        :root {
+            --primary-color: #007bff;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --light-color: #f8f9fa;
+            --dark-color: #343a40;
+            --background-color: #f0f2f5;
+            --text-color: #333;
+            --border-radius: 15px;
+        }
+
+        /* Basic setup for mobile-first full flex display */
+        html, body {
+            height: 100%;
+            margin: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans Gujarati', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better scroll view on small screens */
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background-color: #ffffff;
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 700px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quiz-header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .quiz-header h1 {
+            margin: 0;
+            font-size: 1.5em; /* Adjusted for better fit */
+        }
+
+        #score-tracker {
+            background-color: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            white-space: nowrap; /* Prevents line break */
+        }
+
+        .quiz-body {
+            padding: 30px;
+            flex-grow: 1; /* Allows body to take available space */
+        }
+
+        #question-info {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        #question-text {
+            font-size: 1.3em;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            min-height: 50px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .option-btn {
+            background-color: var(--light-color);
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            width: 100%;
+            text-align: left;
+            font-family: 'Noto Sans Gujarati', sans-serif;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            position: relative;
+            box-sizing: border-box; /* Ensures padding doesn't break layout */
+        }
+
+        .option-btn:hover:not([disabled]) {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        
+        .option-btn.correct, .option-btn.incorrect, .option-btn.selected {
+            color: white;
+            font-weight: bold;
+        }
+
+        .option-btn.correct {
+            background-color: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .option-btn.incorrect {
+            background-color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+
+        /* Style for when user revisits a question */
+        .option-btn.selected {
+             background-color: #5a6268;
+             border-color: #5a6268;
+        }
+
+        .option-btn::after {
+            content: '';
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-size: 16px;
+            background-position: center;
+            background-repeat: no-repeat;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .option-btn.correct::after {
+            content: '✔';
+        }
+
+        .option-btn.incorrect::after {
+             content: '✖';
+        }
+        
+        .option-btn.selected::after {
+             content: '•';
+             font-size: 1.5em;
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.9;
+        }
+        
+        .nav-btn.hint-btn {
+            background-color: var(--warning-color);
+            color: var(--dark-color);
+        }
+
+        #explanation-container {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: #e9f7fd; /* Explanation default */
+            border-left: 5px solid var(--primary-color);
+            border-radius: 5px;
+            font-size: 1.1em;
+            display: none;
+        }
+
+        /* Style for Hint */
+        #explanation-container.hint-active {
+            background-color: #fffbeb;
+            border-left-color: var(--warning-color);
+            color: #664d03;
+        }
+
+
+        .navigation-btns {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 10px; /* Adds space between buttons */
+        }
+
+        .nav-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 20px; /* Slightly reduced padding for flex */
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            flex-grow: 1; /* Allows buttons to share space */
+            flex-basis: 0; /* Ensures equal distribution */
+        }
+        
+        .nav-btn#submit-btn {
+             background-color: var(--success-color);
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            filter: brightness(1.1);
+        }
+        
+        .nav-btn:disabled {
+            background-color: #a0a0a0;
+            cursor: not-allowed;
+        }
+
+        #results-container {
+            padding: 30px;
+            text-align: center;
+            display: none;
+        }
+        
+        #results-container h2 {
+            font-size: 2em;
+            color: var(--primary-color);
+        }
+        
+        #results-container p {
+            font-size: 1.2em;
+            margin: 15px 0;
+        }
+
+        #score {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+        
+        #restart-btn {
+            background-color: var(--warning-color);
+            color: var(--dark-color);
+            width: 100%; /* Make restart button full width */
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .quiz-header {
+                padding: 15px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .quiz-header h1 {
+                font-size: 1.3em;
+            }
+            .quiz-body {
+                padding: 20px;
+            }
+            #question-text {
+                font-size: 1.15em;
+            }
+            .option-btn {
+                font-size: 1em;
+                padding: 12px;
+            }
+            .navigation-btns {
+                flex-wrap: wrap; /* Allow buttons to wrap */
+            }
+            .nav-btn {
+                padding: 12px 15px;
+                flex-basis: 45%; /* Two buttons per row approx */
+            }
+            .nav-btn#submit-btn {
+                flex-basis: 100%; /* Full width submit */
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div class="quiz-header">
+            <h1>હેલ્થ અને પોષણ ક્વિઝ</h1>
+             <div id="score-tracker">સ્કોર: <span id="current-score">0.00</span></div>
+        </div>
+        
+        <div class="quiz-body" id="quiz-body">
+            <div id="question-info"></div>
+            <p id="question-text"></p>
+            <div class="options-container" id="options-container"></div>
+            <div id="explanation-container"></div>
+            <div class="navigation-btns">
+                <button class="nav-btn" id="prev-btn" disabled>પાછળ</button>
+                <button class="nav-btn hint-btn" id="hint-btn">સંકેત</button>
+                <button class="nav-btn" id="next-btn">આગળ</button>
+                <button class="nav-btn" id="submit-btn" style="display:none;">સબમિટ કરો</button>
+            </div>
+        </div>
+
+        <div id="results-container">
+            <h2>ક્વિઝ પૂર્ણ થઈ!</h2>
+            <p>તમારો અંતિમ સ્કોર છે:</p>
+            <p id="score">0.00</p>
+            <p id="score-details"></p>
+            <button class="nav-btn" id="restart-btn">ફરીથી શરૂ કરો</button>
+        </div>
+    </div>
+
+    <script>
+        // --- ડેટાબેઝ (PDF માંથી) ---
+        const quizData = [
+            {
+                question: "ખાંડની ઓછામાં ઓછી કેટલી સાંદ્રતા ઉમેરીને જામ, જેલી અને પ્રિઝર્વેટિવને સાચવી શકાય છે?",
+                options: ["75%", "65%", "40%", "30%"],
+                answer: 1, // 'b'
+                hint: "આ ટકાવારી અડધા કરતાં વધુ છે પરંતુ 70% થી ઓછી છે.",
+                explanation: "જામ, જેલી અને પ્રિઝર્વેટિવને સાચવવા માટે ખાંડની ઓછામાં ઓછી 65% સાંદ્રતા જરૂરી છે, જે બેક્ટેરિયાની વૃદ્ધિને અટકાવે છે."
+            },
+            {
+                question: "જે પુરૂષનું વજન 89 kg અને ઊંચાઈ 172 cm હોય, તો તેનું BMI કેટલું હશે?",
+                options: ["27", "30", "33", "36"],
+                answer: 1, // 'b'
+                hint: "BMI = વજન (kg) / (ઊંચાઈ (m) * ઊંચાઈ (m)). 172 cm = 1.72 m.",
+                explanation: "BMI ની ગણતરી: 89 / (1.72 * 1.72) = 89 / 2.9584 ≈ 30.08. તેથી, સૌથી નજીકનો જવાબ 30 છે."
+            },
+            {
+                question: "નીચેનામાંથી કઈ ઊણપના કારણે માઈક્રોસાયટીક એનેમિયા થાય છે?",
+                options: ["આયોડિન (Iodine)", "ફોસ્ફરસ (Phosphorus)", "કેલ્શિયમ (Calcium)", "આયર્ન (Iron)"],
+                answer: 3, // 'd'
+                hint: "આ તત્વ લોહીમાં હિમોગ્લોબિન બનાવવા માટે જરૂરી છે.",
+                explanation: "આયર્નની ઊણપ એ માઈક્રોસાયટીક એનેમિયા (નાના રક્તકણો) નું સૌથી સામાન્ય કારણ છે, કારણ કે હિમોગ્લોબિનના ઉત્પાદન માટે આયર્ન જરૂરી છે."
+            },
+            {
+                question: "ખોરાકમાં ઊર્જાનો એકમ શું છે?",
+                options: ["પાઉન્ડ (Pound)", "કેલરી (Calorie)", "ગ્રામ (Gram)", "માઈલ (Mile)"],
+                answer: 1, // 'b'
+                hint: "આપણે સામાન્ય રીતે કહીએ છીએ કે આ ખોરાકમાં 'આટલી' ઊર્જા છે.",
+                explanation: "ખોરાકમાંથી મળતી ઊર્જાને માપવા માટે કેલરી (Calorie) અથવા કિલોકેલરી (kcal) એકમનો ઉપયોગ થાય છે."
+            },
+            {
+                question: "HTST મેથડ માટે કેટલા તાપમાન અને સમયનો ઉપયોગ થાય છે?",
+                options: ["15 મિનીટ માટે 63°C", "15 મિનીટ માટે 72°C", "અડધી સેકન્ડ માટે 132°C", "1 મિનીટ માટે 150°C"],
+                answer: 1, // 'b'
+                hint: "આ પ્રશ્ન PDF ના વિકલ્પો પર આધારિત છે.",
+                explanation: "આપેલ વિકલ્પ મુજબ જવાબ (b) છે. જોકે, કૃપા કરીને નોંધ લો કે સાચી HTST (High Temperature Short Time) પદ્ધતિ 72°C પર 15 *સેકન્ડ* માટે હોય છે, 15 *મિનિટ* માટે નહીં. આ પ્રશ્નમાં ટાઈપો હોઈ શકે છે."
+            },
+            {
+                question: "કયા ખોરાકમાં સંતૃપ્ત ચરબી (saturated fat) હોય છે?",
+                options: ["ઘઉં (Wheat)", "નાળિયેર (Coconuts)", "સફરજન (Apples)", "બટાટા (Potatoes)"],
+                answer: 1, // 'b'
+                hint: "આ એક ઉષ્ણકટિબંધીય ફળ છે જેનું તેલ ઓરડાના તાપમાને જામી જાય છે.",
+                explanation: "નાળિયેર અને નાળિયેરનું તેલ સંતૃપ્ત ચરબીનો સમૃદ્ધ વનસ્પતિ સ્ત્રોત છે, જે મોટાભાગના અન્ય વનસ્પતિ તેલોથી વિપરીત છે."
+            },
+            {
+                question: "પાણીમાં દ્રાવ્ય વિટામીનનું ઉદાહરણ કયું છે?",
+                options: ["વિટામીન A", "વિટામીન D", "વિટામીન B", "વિટામીન E"],
+                answer: 2, // 'c'
+                hint: "વિટામીન A, D, E, અને K ચરબીમાં દ્રાવ્ય છે.",
+                explanation: "વિટામીન B કોમ્પ્લેક્સ અને વિટામીન C પાણીમાં દ્રાવ્ય વિટામીન છે, જેનો અર્થ છે કે શરીર તેનો સંગ્રહ કરતું નથી અને તેની નિયમિત જરૂર પડે છે."
+            },
+            {
+                question: "આમળા કયા વિટામીનથી સમૃદ્ધ હોય છે?",
+                options: ["વિટામીન C (Vitamin C)", "વિટામીન D (Vitamic D)", "ફોલિક એસિડ (Folic Acid)", "વિટામીન K (Vitamin K)"],
+                answer: 0, // 'a'
+                hint: "આ વિટામીન રોગપ્રતિકારક શક્તિ વધારે છે અને નારંગીમાં પણ જોવા મળે છે.",
+                explanation: "આમળા (Indian Gooseberry) એ વિટામીન C નો એક અત્યંત સમૃદ્ધ સ્ત્રોત છે, જે એન્ટીઑકિસડન્ટ તરીકે કામ કરે છે."
+            },
+            {
+                question: "કયા પોષક તત્ત્વની ઊણપથી પેલેગ્રા રોગ થાય છે?",
+                options: ["કેલ્શિયમ (Calcium)", "આયર્ન (iron)", "વિટામીન K (Vitamin K)", "નિકોટીનિક એસિડ (Nicotinic Acid)"],
+                answer: 3, // 'd'
+                hint: "આ વિટામીન B કોમ્પ્લેક્સનો એક ભાગ છે, જેને B3 પણ કહેવાય છે.",
+                explanation: "પેલેગ્રા (Pellagra) એ નિકોટીનિક એસિડ (Niacin, વિટામીન B3) ની ગંભીર ઉણપને કારણે થતો રોગ છે."
+            },
+            {
+                question: "કયા પ્રકારના ન્યુટ્રીશીવ ખોરાકથી ટાઈપ-2 પ્રકારના ડાયાબિટીસમાં ઘટાડો કરી શકાય છે?",
+                options: ["વિટામીન કન્ટેન્ટ", "મિનરલ કન્ટેન્ટ", "પ્રોટીન કન્ટેન્ટ", "ફાઈબર કન્ટેન્ટ (Fiber content)"],
+                answer: 3, // 'd'
+                hint: "આ તત્વ શાકભાજી અને આખા અનાજમાં જોવા મળે છે અને પાચનમાં મદદ કરે છે.",
+                explanation: "ફાઈબર (રેસા) યુક્ત આહાર લોહીમાં શર્કરાના શોષણને ધીમું કરે છે, જે ટાઇપ-2 ડાયાબિટીસના સંચાલન અને ઘટાડામાં મદદ કરે છે."
+            },
+            {
+                question: "દૂધને ગરમ કરવા માટે હોલ્ડર મેથડ દ્વારા નીચેનામાંથી શું વપરાય છે?",
+                options: ["30 મિનીટ માટે 60° C", "45 મિનીટ માટે 63°C-66°C", "15 સેકન્ડ માટે 72°C", "દસ સેકન્ડ માટે 125°C"],
+                answer: 0, // 'a'
+                hint: "આ ધીમી ગરમી અને લાંબા સમયની પદ્ધતિ છે.",
+                explanation: "પાશ્વરાઇઝેશનની હોલ્ડર મેથડ (LTLT - Low Temperature Long Time) માં દૂધને 60°C (અથવા 63°C) તાપમાને 30 મિનિટ માટે ગરમ કરવામાં આવે છે."
+            },
+            {
+                question: "કુપોષણની સમસ્યાના નિવારણ માટેનું સૌથી અગત્યનું માપન શું છે?",
+                options: ["ન્યુટ્રીશીનલ સર્વેલન્સ", "હેલ્થ એજયુકેશન (Health education)", "ન્યુટ્રીશીનલ સપ્લિમેન્ટેશન", "ખોરાકનું ઉત્પાદન વધારે"],
+                answer: 1, // 'b'
+                hint: "લોકોને જાગૃત કરવા એ લાંબા ગાળાનો ઉપાય છે.",
+                explanation: "હેલ્થ એજ્યુકેશન (સ્વાસ્થ્ય શિક્ષણ) લોકોને પોષક આહાર વિશે શિક્ષિત કરે છે, જે કુપોષણને મૂળમાંથી ઉકેલવા માટેનું સૌથી અગત્યનું અને ટકાઉ માપ છે."
+            },
+            {
+                question: "ફૂડ સર્વેમાં એક ડાયેટરી સાયકલ કેટલા દિવસમાં પૂર્ણ થાય છે?",
+                options: ["એક દિવસ (1 day)", "ત્રણ દિવસ (3 day)", "સાત દિવસ (7 days)", "ત્રીસ દિવસ (30 day)"],
+                answer: 2, // 'c'
+                hint: "આ સમયગાળો અઠવાડિયાના બધા દિવસોના આહારની વિવિધતાને આવરી લે છે.",
+                explanation: "ડાયેટરી સર્વેમાં સામાન્ય રીતે 7-દિવસની સાયકલનો ઉપયોગ થાય છે જેથી અઠવાડિયા દરમિયાન ખોરાકની પદ્ધતિમાં થતા ફેરફારોનો સચોટ ખ્યાલ આવી શકે."
+            },
+            {
+                question: "બાળક માટેનું જન્મ સમયનું સામાન્ય વજન શું હોય છે?",
+                options: ["2 kg", "2.5 kg", "2.75 kg", "3 kg"],
+                answer: 1, // 'b'
+                hint: "આ વજન 2 કિલોથી વધુ અને 3 કિલોથી ઓછું છે.",
+                explanation: "ભારતમાં, 2.5 કિલો કે તેથી વધુ વજન ધરાવતા બાળકને સામાન્ય જન્મ વજન ગણવામાં આવે છે. 2.5 કિલોથી ઓછું વજન 'ઓછું જન્મ વજન' કહેવાય છે."
+            },
+            {
+                question: "પ્રાણી મૂળના ખોરાકમાંથી ફક્ત કયું વિટામીન હાજર હોય છે?",
+                options: ["વિટામીન A", "વિટામીન B6", "વિટામીન B12", "વિટામીન C"],
+                answer: 2, // 'c'
+                hint: "શાકાહારી લોકોએ આ વિટામીનનું સપ્લિમેન્ટ લેવું પડે છે.",
+                explanation: "વિટામીન B12 કુદરતી રીતે ફક્ત પ્રાણીજ ઉત્પાદનો (માંસ, ઇંડા, ડેરી) માં જ જોવા મળે છે. વનસ્પતિ આધારિત ખોરાકમાં તે હોતું નથી."
+            },
+            {
+                question: "સામાન્ય આહારમાં ફેટ અને તેલની કેટલા ટકાવારીનો સમાવેશ થવો જોઈએ?",
+                options: ["15-30%", "12-15%", "25-30%", "30-35%"],
+                answer: 0, // 'a'
+                hint: "આ રેન્જ કુલ કેલરીના પાંચમા ભાગથી ત્રીજા ભાગની વચ્ચે છે.",
+                explanation: "સ્વસ્થ આહાર માટે, કુલ દૈનિક કેલરીના 15-30% ચરબી (ફેટ) માંથી આવવા જોઈએ, જેમાં સંતૃપ્ત ચરબીનું પ્રમાણ ઓછું હોવું જોઈએ."
+            },
+            {
+                question: "સંતુલિત આહાર (Balanced diet) શું છે?",
+                options: ["ખોરાકનો એવો પ્રકાર કે જેનાથી માણસ અથવા ગ્રુપ જીવે છે", "ન્યુટ્રીશીયન ખામીઓથી બચવા માટેનો સુરક્ષિત પોષક આહાર", "એવો આહાર કે જેનાથી આહારનો લક્ષ્ય પૂર્ણ થાય", "એવો આહાર કે જે નક્કી કરેલ આહારના જથ્થાને પૂર્ણ કરે"],
+                answer: 1, // 'b'
+                hint: "સંતુલિત આહારનો હેતુ ઉણપને રોકવાનો છે.",
+                explanation: "સંતુલિત આહાર એવો આહાર છે જે શરીરને જરૂરી તમામ પોષકતત્ત્વો યોગ્ય માત્રામાં પૂરા પાડે છે, જેથી પોષણની ખામીઓથી બચી શકાય."
+            },
+            {
+                question: "કેનીંગની પ્રક્રિયા કોણે વિકસાવી?",
+                options: ["નિકોલસ એપર્ટ (Nicolas Appert)", "લૂઈસ પાશ્ચર (Louis Pasteur)", "નોર્મન બોરલોગ (Norman Borlaug)", "વોલ્ટર હેસ્સે (Walter hesse)"],
+                answer: 0, // 'a'
+                hint: "તેમને 'ફૂડ પ્રિઝર્વેશનના પિતા' કહેવામાં આવે છે.",
+                explanation: "નિકોલસ એપર્ટ (Nicolas Appert) એ 1800 ના દાયકાની શરૂઆતમાં ખોરાકને હવાબંધ કન્ટેનરમાં ગરમ કરીને સાચવવાની પદ્ધતિ (કેનીંગ) વિકસાવી હતી."
+            },
+            {
+                question: "નીચેનામાંથી બોડી બિલ્ડીંગ ખોરાક સિવાયના કયા છે?",
+                options: ["ફળ (Fruits)", "કઠોળ (Pulses)", "દૂધ (Milk)", "મરઘાં (Poultry)"],
+                answer: 0, // 'a'
+                hint: "બોડી બિલ્ડીંગ ખોરાક એટલે પ્રોટીનયુક્ત ખોરાક. આમાંથી કયો પ્રોટીનનો મુખ્ય સ્ત્રોત નથી?",
+                explanation: "કઠોળ, દૂધ અને મરઘાં પ્રોટીનના સમૃદ્ધ સ્ત્રોત છે, જે 'બોડી બિલ્ડીંગ' (શરીર નિર્માણ) માટે જરૂરી છે. ફળો મુખ્યત્વે વિટામિન્સ, મિનરલ્સ અને ફાઇબર પૂરા પાડે છે."
+            },
+            {
+                question: "કયું સનસાઈન વિટામીન તરીકે ઓળખાય છે?",
+                options: ["વિટામીન K", "વિટામીન A", "વિટામીન C", "વિટામીન D"],
+                answer: 3, // 'd'
+                hint: "આપણું શરીર સૂર્યપ્રકાશની મદદથી આ વિટામીન બનાવે છે.",
+                explanation: "વિટામીન D ને 'સનશાઇન વિટામીન' કહેવામાં આવે છે કારણ કે જ્યારે ત્વચા સૂર્યના અલ્ટ્રાવાયોલેટ કિરણોના સંપર્કમાં આવે છે ત્યારે શરીર તેને ઉત્પન્ન કરી શકે છે."
+            },
+            {
+                question: "ઊર્જાનો મુખ્ય સ્ત્રોત શું છે?",
+                options: ["વિટામિન (Vitamins)", "આયર્ન (Iron)", "ફેટ (Fats)", "પાણી (Water)"],
+                answer: 2, // 'c'
+                hint: "આ પોષકતત્ત્વ પ્રતિ ગ્રામ સૌથી વધુ કેલરી ધરાવે છે.",
+                explanation: "જ્યારે કાર્બોહાઇડ્રેટ્સ ઊર્જાનો પ્રાથમિક સ્ત્રોત છે, ત્યારે ફેટ (ચરબી) ઊર્જાનો સૌથી મોટો (સઘન) સ્ત્રોત છે, જે પ્રતિ ગ્રામ 9 કેલરી પૂરી પાડે છે (કાર્બોહાઇડ્રેટ અને પ્રોટીન 4 કેલરી/ગ્રામ આપે છે)."
+            },
+            {
+                question: "નીચેનામાંથી કોને મિલેટ (millet) કહેવામાં આવે છે?",
+                options: ["બાજરો (Bajra)", "ચોખા (Rice)", "ઘઉં (Wheat)", "મકાઈ (Corn)"],
+                answer: 0, // 'a'
+                hint: "આ એક જાડું ધાન્ય છે જે શિયાળામાં વધુ ખવાય છે.",
+                explanation: "મિલેટ એ નાના દાણાવાળા ધાન્યનો સમૂહ છે, જેમાં બાજરો, જુવાર, રાગી વગેરેનો સમાવેશ થાય છે. ઘઉં અને ચોખા અલગ અનાજ છે."
+            },
+            {
+                question: "HTST મેથડ (હાઈ ટેમ્પરેચર અને શોર્ટ ટાઈમ મેથડ) શેના માટે વપરાય છે?",
+                options: ["પાણીના શુદ્ધિકરણ", "કોટનના સ્ટીરીલાઈઝેશન", "દૂધના પાશ્વરાઈઝેશન માટે", "હવાના શુદ્ધિકરણ"],
+                answer: 2, // 'c'
+                hint: "આ પદ્ધતિ પ્રવાહી ખોરાકને જંતુમુક્ત કરવા માટે વપરાય છે.",
+                explanation: "HTST (High Temperature Short Time) પદ્ધતિ એ દૂધના પાશ્વરાઈઝેશનની સૌથી સામાન્ય વ્યાપારી પદ્ધતિ છે."
+            },
+            {
+                question: "દૂધના પાશ્વરાઈઝેશન માટે સૌથી વધારે પ્રમાણમાં વપરાતી મેથડ કઈ છે?",
+                options: ["હોલ્ડર મેથડ", "અલ્ટ્રા હાઈ ટેમ્પરેચર મેથડ (UHT)", "હાઈ ટેમ્પરેચર અને શોર્ટ ટાઈમ મેથડ (HTST)", "ડિસઇન્ફેક્શન મેથડ"],
+                answer: 2, // 'c'
+                hint: "આ પદ્ધતિ ઝડપી અને કાર્યક્ષમ છે.",
+                explanation: "HTST (High Temperature Short Time) એ દૂધના પાશ્વરાઈઝેશન માટે વિશ્વભરમાં સૌથી વધુ વપરાતી પદ્ધતિ છે, કારણ કે તે ઝડપી છે અને દૂધના પોષકતત્ત્વોને ઓછું નુકસાન પહોંચાડે છે."
+            },
+            {
+                question: "કુપોષણની તીવ્રતાનું એન્થ્રોપોમેટ્રિક સૂચક શું છે?",
+                options: [
+                    "ઉંમર મુજબ વજન (weight for age)",
+                    "ઉંમર મુજબ ઊંચાઈ (height for age)",
+                    "ઊંચાઈ મુજબ વજન (weight for height)",
+                    "જાડાપણા મુજબ સ્કીન (skin fold thickness)"
+                ],
+                answer: 2, // 'c'
+                hint: "આ સૂચક તીવ્ર અને તાજેતરના વજન ઘટાડાને દર્શાવે છે.",
+                explanation: "ઊંચાઈ મુજબ વજન (Weight for height) એ કુપોષણની તીવ્રતા, ખાસ કરીને તીવ્ર કુપોષણ (wasting) માપવા માટેનું શ્રેષ્ઠ એન્થ્રોપોમેટ્રિક સૂચક છે."
+            },
+            {
+                question: "ડાયાબિટીસ મેલીટસ એ શેનો મહત્વપૂર્ણ વિકાર છે?",
+                options: [
+                    "કાર્બોહાઈડ્રેડ મેટાબોલિસમ (Carbohydrates metabolism)",
+                    "પ્રોટીન મેટાબોલિસમ (Protein metabolism)",
+                    "મિનરલ મેટાબોલિસમ (Mineral metabolism)",
+                    "ફેટ મેટાબોલિસમ (Fat metabolism)"
+                ],
+                answer: 0, // 'a'
+                hint: "આ રોગ લોહીમાં 'સુગર' (શર્કરા) ના સ્તર સાથે સંબંધિત છે.",
+                explanation: "ડાયાબિટીસ મેલીટસ એ મુખ્યત્વે કાર્બોહાઇડ્રેટ્સના ચયાપચય (metabolism) નો વિકાર છે, જેમાં શરીર ઇન્સ્યુલિનનો યોગ્ય રીતે ઉપયોગ કરી શકતું નથી અથવા પૂરતું ઉત્પાદન કરી શકતું નથી."
+            },
+            {
+                question: "ભારતીય પુખ્ત વયના લોકો માટે દૈનિક કેટલા વિટામીન A ની જરૂરિયાત હોય છે?",
+                options: [
+                    "350 mcg",
+                    "600 mcg",
+                    "800 mcg",
+                    "950 mcg"
+                ],
+                answer: 1, // 'b'
+                hint: "આ માત્રા 500 mcg અને 700 mcg ની વચ્ચે છે.",
+                explanation: "ICMR (ઇન્ડિયન કાઉન્સિલ ઑફ મેડિકલ રિસર્ચ) મુજબ, ભારતીય પુખ્ત વયના લોકો માટે વિટામીન A ની દૈનિક ભલામણ કરેલ માત્રા (RDA) 600 માઇક્રોગ્રામ (mcg) છે."
+            },
+            {
+                question: "વધારે ચરબીયુક્ત ખોરાક લેવાથી કયો રોગ થવાનું જોખમ વધે છે?",
+                options: [
+                    "ફેફસાનું કેન્સર (Lung cancer)",
+                    "લોહીનું કેન્સર (બ્લડ કેન્સર) (Blood cancer)",
+                    "સ્તન કેન્સર (Breast cancer)",
+                    "લીવરનું કેન્સર (Liver cancer)"
+                ],
+                answer: 2, // 'c'
+                hint: "આ રોગ ખાસ કરીને સ્ત્રીઓમાં વધુ જોવા મળે છે અને હોર્મોન્સ સાથે સંબંધિત છે.",
+                explanation: "અભ્યાસોએ દર્શાવ્યું છે કે વધારે ચરબીયુક્ત, ખાસ કરીને સેચ્યુરેટેડ ફેટવાળો આહાર, સ્તન કેન્સર (Breast Cancer) ના જોખમને વધારી શકે છે."
+            },
+            {
+                question: "નીચેનામાંથી કયું નિકટવર્તી સિધ્ધાંત (proximate principle) થી અલગ પડે છે?",
+                options: [
+                    "પ્રોટીન (Proteins)",
+                    "ફેટ (Fats)",
+                    "કાર્બોહાઈડ્રેટ (Carbohydrates)",
+                    "મિનરલ અને વિટામીન (Minerals and Vitamins)"
+                ],
+                answer: 3, // 'd'
+                hint: "નિકટવર્તી સિદ્ધાંતો તે છે જે ઊર્જા (કેલરી) પ્રદાન કરે છે.",
+                explanation: "નિકટવર્તી સિદ્ધાંતો (Proximate principles) એ ખોરાકના મુખ્ય ઘટકો છે જે ઊર્જા પૂરી પાડે છે, જેમાં પ્રોટીન, ફેટ્સ અને કાર્બોહાઇડ્રેટ્સનો સમાવેશ થાય છે. મિનરલ્સ અને વિટામિન્સ સૂક્ષ્મ પોષકતત્ત્વો (micronutrients) છે."
+            },
+            {
+                question: "નીચેનામાંથી કયું પ્રાણીજ પ્રોટીન નથી?",
+                options: [
+                    "ઈંડું (Egg)",
+                    "દૂધ (Milk)",
+                    "સોયાબીન (Soyabean)",
+                    "માછલી (Fish)"
+                ],
+                answer: 2, // 'c'
+                hint: "આ પ્રોટીનનો સ્ત્રોત વનસ્પતિમાંથી મળે છે.",
+                explanation: "સોયાબીન એ વનસ્પતિ આધારિત પ્રોટીનનો ઉત્તમ સ્ત્રોત છે, જ્યારે ઈંડા, દૂધ અને માછલી પ્રાણીજ પ્રોટીન સ્ત્રોત છે."
+            },
+            {
+                question: "બધા પોષણ વિકાર (ડિસઓર્ડર)માંથી કયો વધારે પ્રમાણમાં પોષણ મળવાથી (over nutrition) નથી થતો?",
+                options: [
+                    "હાયપર વિટામીનોસીસ (Hyper Vitaminosis)",
+                    "ઓબેસિટી (જાડાપણું) (Obesity)",
+                    "ફ્લોરોસીસ (Fluorosis)",
+                    "ઓસ્ટેઓમાલાસિયા (Osteomalacia)"
+                ],
+                answer: 3, // 'd'
+                hint: "આ રોગ વિટામીનની ઉણપને કારણે થાય છે, વધુ પડતા પોષણને કારણે નહીં.",
+                explanation: "ઓસ્ટેઓમાલાસિયા (Osteomalacia) એ વિટામીન D ની ઉણપને કારણે પુખ્ત વયના લોકોમાં હાડકાં નબળાં પડવાની સ્થિતિ છે. અન્ય વિકલ્પો વધુ પડતા પોષણ સાથે સંબંધિત છે."
+            },
+            {
+                question: "સ્ત્રીઓમાં 100 ml રક્તમાં Hb (હિમોગ્લોબિન) નું સામાન્ય સ્તર કેટલું હોય છે?",
+                options: [
+                    "14 gm",
+                    "18 gm",
+                    "20 gm",
+                    "10 gm"
+                ],
+                answer: 0, // 'a'
+                hint: "આ સ્તર પુરુષો કરતાં થોડું ઓછું હોય છે.",
+                explanation: "સ્ત્રીઓમાં હિમોગ્લોબિનનું સામાન્ય સ્તર આશરે 12 થી 15.5 gm/dL હોય છે. આપેલા વિકલ્પોમાંથી, '14 gm' એ આ શ્રેણીમાં આવતું સૌથી યોગ્ય મૂલ્ય છે."
+            },
+            {
+                question: "નેશનલ ન્યુટ્રીશીયન વીક (રાષ્ટ્રીય પોષણ સપ્તાહ) ક્યારે ઉજવવામાં આવે છે?",
+                options: [
+                    "1 લી થી 7 મી સપ્ટેમ્બર",
+                    "1 લી થી 7 મી ડિસેમ્બર",
+                    "7 મી થી 14 મી ઓક્ટોબર",
+                    "1 લી થી 7 મી જૂન"
+                ],
+                answer: 0, // 'a'
+                hint: "આ સપ્તાહ ચોમાસાના અંતમાં આવે છે.",
+                explanation: "ભારતમાં દર વર્ષે 1લી થી 7મી સપ્ટેમ્બર દરમિયાન રાષ્ટ્રીય પોષણ સપ્તાહ ઉજવવામાં આવે છે, જેનો હેતુ પોષણ અને સ્વાસ્થ્ય વિશે જાગૃતિ ફેલાવવાનો છે."
+            },
+            {
+                question: "12 મહિનાના (1 વર્ષના) બાળકનું આદર્શ વજન કેટલું હોય છે?",
+                options: [
+                    "5 kg",
+                    "10 kg",
+                    "15 kg",
+                    "20 kg"
+                ],
+                answer: 2, // 'c'
+                hint: "આ પ્રશ્ન PDF ના વિકલ્પો પર આધારિત છે.",
+                explanation: "આ પ્રશ્નના વિકલ્પો મુજબ, 12 મહિનાના બાળકનું આદર્શ વજન 15 કિલો છે. (નોંધ: સામાન્ય માર્ગદર્શિકા મુજબ જન્મના વજનથી 3 ગણું, એટલે કે 9-10 કિલો પણ ગણવામાં આવે છે, પરંતુ અહીં વિકલ્પ મુજબ 15 કિલો છે.)"
+            },
+            {
+                question: "રક્તની જમાવટ (blood coagulation) માટે કયું વિટામીન જરૂરી છે?",
+                options: [
+                    "વિટામીન A",
+                    "વિટામીન D",
+                    "વિટામીન B",
+                    "વિટામીન K"
+                ],
+                answer: 3, // 'd'
+                hint: "આ વિટામીન લોહી ગંઠાવા માટે જરૂરી પ્રોટીન બનાવવામાં મદદ કરે છે.",
+                explanation: "વિટામીન K એ રક્તની જમાવટ (લોહી ગંઠાવાની પ્રક્રિયા) માટે આવશ્યક છે કારણ કે તે પ્રોથ્રોમ્બિન જેવા ક્લોટિંગ પરિબળોના સંશ્લેષણ માટે જરૂરી છે."
+            }
+        ];
+
+
+        // --- DOM તત્વો ---
+        const quizBody = document.getElementById('quiz-body');
+        const resultsContainer = document.getElementById('results-container');
+        
+        const questionInfoEl = document.getElementById('question-info');
+        const questionTextEl = document.getElementById('question-text');
+        const optionsContainerEl = document.getElementById('options-container');
+        const explanationContainerEl = document.getElementById('explanation-container');
+        
+        const currentScoreEl = document.getElementById('current-score');
+        const finalScoreEl = document.getElementById('score');
+        const scoreDetailsEl = document.getElementById('score-details');
+
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const hintBtn = document.getElementById('hint-btn');
+        const submitBtn = document.getElementById('submit-btn');
+        const restartBtn = document.getElementById('restart-btn');
+
+        // --- ક્વિઝ વેરિયેબલ્સ ---
+        let currentQuestionIndex = 0;
+        let score = 0;
+        // દરેક પ્રશ્ન માટે વપરાશકર્તાનો જવાબ સંગ્રહવા માટે એરે
+        // { selected: number | null, isCorrect: boolean | null }
+        let userAnswers = new Array(quizData.length).fill(null).map(() => ({ selected: null, isCorrect: null }));
+
+        // --- મુખ્ય કાર્યો ---
+
+        /** ક્વિઝ લોડ કરવાનું કાર્ય */
+        function loadQuiz() {
+            // પહેલાનું બધું સાફ કરો
+            optionsContainerEl.innerHTML = '';
+            explanationContainerEl.style.display = 'none';
+            explanationContainerEl.classList.remove('hint-active');
+            
+            // વર્તમાન પ્રશ્નનો ડેટા મેળવો
+            const currentQuestion = quizData[currentQuestionIndex];
+            
+            // પ્રશ્ન અને માહિતી સેટ કરો
+            questionInfoEl.innerText = `પ્રશ્ન ${currentQuestionIndex + 1} / ${quizData.length}`;
+            questionTextEl.innerText = currentQuestion.question;
+
+            // વિકલ્પો બનાવો
+            currentQuestion.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.classList.add('option-btn');
+                button.dataset.index = index;
+                optionsContainerEl.appendChild(button);
+            });
+
+            // નેવિગેશન બટનો મેનેજ કરો
+            manageButtons();
+
+            // જો જવાબ પહેલાથી જ અપાયેલો હોય (પાછળ/આગળ નેવિગેટ કરતી વખતે), તો તેને બતાવો
+            restoreAnswerState();
+        }
+
+        /** જવાબની સ્થિતિ પુનઃસ્થાપિત કરો */
+        function restoreAnswerState() {
+            const answerState = userAnswers[currentQuestionIndex];
+            
+            if (answerState.selected !== null) {
+                // જો જવાબ અપાયેલો હોય
+                const selectedOptionIndex = answerState.selected;
+                const correctOptionIndex = quizData[currentQuestionIndex].answer;
+
+                // બધા બટનો નિષ્ક્રિય કરો
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.disabled = true;
+                    const btnIndex = parseInt(btn.dataset.index);
+
+                    if (btnIndex === correctOptionIndex) {
+                        btn.classList.add('correct'); // સાચો જવાબ હંમેશા બતાવો
+                    }
+                    if (btnIndex === selectedOptionIndex && !answerState.isCorrect) {
+                        btn.classList.add('incorrect'); // જો ખોટો પસંદ કર્યો હોય તો બતાવો
+                    }
+                    if (btnIndex === selectedOptionIndex && answerState.isCorrect) {
+                         // જો સાચો પસંદ કર્યો હોય, તો તે 'correct' માં પહેલેથી જ છે
+                    }
+                });
+
+                // સમજૂતી બતાવો
+                showExplanation(false); // 'false' કારણ કે સ્કોર ફરીથી ગણવાનો નથી
+                hintBtn.disabled = true; // જવાબ આપ્યા પછી સંકેત નિષ્ક્રિય કરો
+            } else {
+                // જો જવાબ ન અપાયો હોય
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    btn.disabled = false;
+                });
+                hintBtn.disabled = false;
+            }
+        }
+
+        /** જવાબ પસંદ કરવાનું કાર્ય */
+        function selectAnswer(selectedOptionIndex) {
+            // જો જવાબ પહેલાથી જ અપાયો હોય તો કંઈ ન કરો
+            if (userAnswers[currentQuestionIndex].selected !== null) return;
+
+            const currentQuestion = quizData[currentQuestionIndex];
+            const correctOptionIndex = currentQuestion.answer;
+            const isCorrect = (selectedOptionIndex === correctOptionIndex);
+
+            // જવાબની સ્થિતિ સાચવો
+            userAnswers[currentQuestionIndex] = { selected: selectedOptionIndex, isCorrect: isCorrect };
+
+            // સ્કોર અપડેટ કરો
+            if (isCorrect) {
+                score += 1;
+            } else {
+                score -= 0.25;
+            }
+            // ખાતરી કરો કે સ્કોર 0 થી નીચે ન જાય (વૈકલ્પિક નિયમ, પણ સારો છે)
+            if (score < 0) score = 0;
+            
+            currentScoreEl.innerText = score.toFixed(2);
+
+            // સમજૂતી બતાવો
+            showExplanation(true); // 'true' કારણ કે આ નવો જવાબ છે
+            
+            // સંકેત બટન નિષ્ક્રિય કરો
+            hintBtn.disabled = true;
+
+            // બધા વિકલ્પો નિષ્ક્રિય કરો
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+                const btnIndex = parseInt(btn.dataset.index);
+                
+                // પસંદ કરેલા અને સાચા/ખોટા જવાબોને સ્ટાઇલ કરો
+                if (btnIndex === correctOptionIndex) {
+                    btn.classList.add('correct');
+                }
+                if (btnIndex === selectedOptionIndex && !isCorrect) {
+                    btn.classList.add('incorrect');
+                }
+            });
+        }
+
+        /** સમજૂતી બતાવો */
+        function showExplanation(isNewAnswer) {
+            const explanation = quizData[currentQuestionIndex].explanation;
+            explanationContainerEl.innerHTML = `<strong>સમજૂતી (Explanation):</strong><br>${explanation}`;
+            explanationContainerEl.classList.remove('hint-active');
+            explanationContainerEl.style.display = 'block';
+        }
+
+        /** સંકેત બતાવો */
+        function showHint() {
+            const hint = quizData[currentQuestionIndex].hint;
+            explanationContainerEl.innerHTML = `<strong>સંકેત (Hint):</strong><br>${hint}`;
+            explanationContainerEl.classList.add('hint-active');
+            explanationContainerEl.style.display = 'block';
+            hintBtn.disabled = true; // એકવાર સંકેતનો ઉપયોગ કર્યા પછી નિષ્ક્રિય કરો
+        }
+
+        /** બટનોનું સંચાલન કરો */
+        function manageButtons() {
+            // પાછળ બટન
+            prevBtn.disabled = (currentQuestionIndex === 0);
+
+            // આગળ/સબમિટ બટન
+            if (currentQuestionIndex === quizData.length - 1) {
+                nextBtn.style.display = 'none';
+                submitBtn.style.display = 'block';
+            } else {
+                nextBtn.style.display = 'block';
+                submitBtn.style.display = 'none';
+            }
+        }
+
+        /** પરિણામો બતાવો */
+        function showResults() {
+            quizBody.style.display = 'none';
+            resultsContainer.style.display = 'block';
+
+            let correctCount = 0;
+            let incorrectCount = 0;
+            let skippedCount = 0;
+
+            userAnswers.forEach(answer => {
+                if (answer.isCorrect === true) {
+                    correctCount++;
+                } else if (answer.isCorrect === false) {
+                    incorrectCount++;
+                } else {
+                    skippedCount++;
+                }
+            });
+
+            finalScoreEl.innerText = score.toFixed(2);
+            scoreDetailsEl.innerHTML = `
+                સાચા જવાબો: ${correctCount}<br>
+                ખોટા જવાબો: ${incorrectCount}<br>
+                છોડી દીધેલા: ${skippedCount}
+            `;
+            
+            // સ્કોરના આધારે રંગ બદલો
+            if (score > (quizData.length * 0.6)) {
+                finalScoreEl.style.color = 'var(--success-color)';
+            } else if (score > (quizData.length * 0.3)) {
+                finalScoreEl.style.color = 'var(--warning-color)';
+            } else {
+                finalScoreEl.style.color = 'var(--danger-color)';
+            }
+        }
+
+        /** ક્વિઝ ફરીથી શરૂ કરો */
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            userAnswers = new Array(quizData.length).fill(null).map(() => ({ selected: null, isCorrect: null }));
+            
+            currentScoreEl.innerText = '0.00';
+            resultsContainer.style.display = 'none';
+            quizBody.style.display = 'block';
+            
+            loadQuiz();
+        }
+
+        // --- ઇવેન્ટ લિસનર્સ ---
+        
+        // વિકલ્પો પર ક્લિક કરવા માટે ઇવેન્ટ ડેલિગેશન
+        optionsContainerEl.addEventListener('click', (e) => {
+            if (e.target.classList.contains('option-btn')) {
+                const selectedOptionIndex = parseInt(e.target.dataset.index);
+                selectAnswer(selectedOptionIndex);
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex < quizData.length - 1) {
+                currentQuestionIndex++;
+                loadQuiz();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuiz();
+            }
+        });
+
+        hintBtn.addEventListener('click', showHint);
+        submitBtn.addEventListener('click', showResults);
+        restartBtn.addEventListener('click', restartQuiz);
+
+        // --- પ્રારંભિક લોડ ---
+        loadQuiz();
+    </script>
+
+</body>
+</html>
+
